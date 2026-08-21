@@ -5,27 +5,37 @@ dns.setServers(['1.1.1.1', '8.8.8.8']);
 
 import express from 'express';
 import cors from 'cors';
+import { expressConnectMiddleware } from '@connectrpc/connect-express';
 import { connectDB } from './config/db.js';
-import { redis } from './config/redis.js';
-import routes from './routes/index.js';
+import restRoutes from './routes/index.js';
+
+// Import generated gRPC Service definition & Controller
+import { AuthService } from './gen/auth_connect.js';
+import { grpcAuthController } from './controllers/grpcAuthController.js';
 
 const app = express();
 
-// Global Middlewares
 app.use(cors({ origin: '*' }));
 app.use(express.json());
 
-// Database Connections
 await connectDB();
 
-// Mount All API Routes under /api/v1
-app.use('/api/v1', routes);
+// 1. Mount standard REST API routes
+app.use('/api/v1', restRoutes);
+
+// 2. Mount gRPC Service handler
+app.use(
+  expressConnectMiddleware({
+    routes(router) {
+      router.service(AuthService, grpcAuthController);
+    },
+  })
+);
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {
   console.log(`\n=================================`);
-  console.log(`  NEUROXIS GAME ENGINE ACTIVE     `);
+  console.log(`  NEUROXIS REST + gRPC ENGINE     `);
   console.log(`  Port: ${PORT}                  `);
-  console.log(`  Environment: ${process.env.NODE_ENV} `);
-  console.log(`=================================`);
+  console.log(`=================================\n`);
 });

@@ -1,0 +1,55 @@
+syntax = "proto3";
+
+package neuroxis.v1;
+
+// Service definition (The API endpoints)
+service AuthService {
+  rpc Register (RegisterRequest) returns (AuthResponse);
+  rpc Login (LoginRequest) returns (AuthResponse);
+  rpc ForgotPassword (ForgotPasswordRequest) returns (ForgotPasswordResponse);
+  rpc ResetPassword (ResetPasswordRequest) returns (AuthResponse);
+}
+
+// Data structures (Messages)
+message RegisterRequest {
+  string username = 1;
+  string email = 2;
+  string password = 3;
+  string region = 4;
+}
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message User {
+  string id = 1;
+  string username = 2;
+  string email = 3;
+  string region = 4;
+  int32 global_elo = 5;
+}
+
+message AuthResponse {
+  bool success = 1;
+  string token = 2;
+  User user = 3;
+  string error = 4;
+}
+
+message ForgotPasswordRequest {
+  string email = 1;
+}
+
+message ForgotPasswordResponse {
+  bool success = 1;
+  string message = 2;
+  string reset_token = 3;
+  string error = 4;
+}
+
+message ResetPasswordRequest {
+  string token = 1;
+  string new_password = 2;
+}

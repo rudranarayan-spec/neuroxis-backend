@@ -6,12 +6,14 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "lint": "easlint"
+    "lint": "easlint",
+    "generate": "npx buf generate proto"
   },
   "dependencies": {
-    "@connectrpc/connect": "^1.4.0",
-    "@connectrpc/connect-express": "^1.4.0",
-    "@connectrpc/connect-node": "^1.4.0",
+    "@bufbuild/protobuf": "^1.10.1",
+    "@connectrpc/connect": "^1.7.0",
+    "@connectrpc/connect-express": "^1.7.0",
+    "@connectrpc/connect-node": "^1.7.0",
     "@rudranarayan01/logaccent": "^0.3.1",
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
@@ -22,6 +24,9 @@
     "mongoose": "^8.3.1"
   },
   "devDependencies": {
+    "@bufbuild/buf": "^1.72.0",
+    "@bufbuild/protoc-gen-es": "^1.10.1",
+    "@connectrpc/protoc-gen-connect-es": "^1.7.0",
     "nodemon": "^3.1.14"
   }
 }

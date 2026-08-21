@@ -1,0 +1,47 @@
+syntax = "proto3";
+
+package neuroxis.v1;
+
+service LeaderboardService {
+  // Submit a score and get back updated rank/high score
+  rpc SubmitScore (SubmitScoreRequest) returns (SubmitScoreResponse);
+
+  // Fetch top players for a specific game and region
+  rpc GetRankings (GetRankingsRequest) returns (GetRankingsResponse);
+}
+
+message SubmitScoreRequest {
+  string game_type = 1; // "quickMath", "sudoku", "memory", "wordGame"
+  int32 score = 2;
+  int32 execution_time_ms = 3; // Used for anti-cheat validation
+}
+
+message SubmitScoreResponse {
+  bool success = 1;
+  int32 new_high_score = 2;
+  int64 global_rank = 3;
+  int64 regional_rank = 4;
+  string error = 5;
+}
+
+message GetRankingsRequest {
+  string game_type = 1;
+  string region = 2; // "GLOBAL", "US", "EU", "ASIA"
+  int32 limit = 3;
+}
+
+message LeaderboardEntry {
+  int64 rank = 1;
+  string user_id = 2;
+  string username = 3;
+  int32 score = 4;
+  string region = 5;
+}
+
+message GetRankingsResponse {
+  bool success = 1;
+  string game_type = 2;
+  string region = 3;
+  repeated LeaderboardEntry entries = 4;
+  string error = 5;
+}
