@@ -7,121 +7,46 @@ import type { BinaryReadOptions, FieldList, JsonReadOptions, JsonValue, PartialM
 import { Message, proto3 } from "@bufbuild/protobuf";
 
 /**
- * @generated from message neuroxis.v1.SubmitScoreRequest
+ * @generated from message neuroxis.v1.GetLeaderboardRequest
  */
-export declare class SubmitScoreRequest extends Message<SubmitScoreRequest> {
+export declare class GetLeaderboardRequest extends Message<GetLeaderboardRequest> {
   /**
-   * "quickMath", "sudoku", "memory", "wordGame"
+   * "global", "region", "district"
    *
-   * @generated from field: string game_type = 1;
+   * @generated from field: string type = 1;
    */
-  gameType: string;
+  type: string;
 
   /**
-   * @generated from field: int32 score = 2;
-   */
-  score: number;
-
-  /**
-   * Used for anti-cheat validation
+   * Specific region or district name (e.g. "ASIA", "EU")
    *
-   * @generated from field: int32 execution_time_ms = 3;
+   * @generated from field: string filter = 2;
    */
-  executionTimeMs: number;
-
-  constructor(data?: PartialMessage<SubmitScoreRequest>);
-
-  static readonly runtime: typeof proto3;
-  static readonly typeName = "neuroxis.v1.SubmitScoreRequest";
-  static readonly fields: FieldList;
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SubmitScoreRequest;
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SubmitScoreRequest;
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SubmitScoreRequest;
-
-  static equals(a: SubmitScoreRequest | PlainMessage<SubmitScoreRequest> | undefined, b: SubmitScoreRequest | PlainMessage<SubmitScoreRequest> | undefined): boolean;
-}
-
-/**
- * @generated from message neuroxis.v1.SubmitScoreResponse
- */
-export declare class SubmitScoreResponse extends Message<SubmitScoreResponse> {
-  /**
-   * @generated from field: bool success = 1;
-   */
-  success: boolean;
+  filter: string;
 
   /**
-   * @generated from field: int32 new_high_score = 2;
+   * @generated from field: int32 page = 3;
    */
-  newHighScore: number;
+  page: number;
 
   /**
-   * @generated from field: int64 global_rank = 3;
-   */
-  globalRank: bigint;
-
-  /**
-   * @generated from field: int64 regional_rank = 4;
-   */
-  regionalRank: bigint;
-
-  /**
-   * @generated from field: string error = 5;
-   */
-  error: string;
-
-  constructor(data?: PartialMessage<SubmitScoreResponse>);
-
-  static readonly runtime: typeof proto3;
-  static readonly typeName = "neuroxis.v1.SubmitScoreResponse";
-  static readonly fields: FieldList;
-
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): SubmitScoreResponse;
-
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): SubmitScoreResponse;
-
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): SubmitScoreResponse;
-
-  static equals(a: SubmitScoreResponse | PlainMessage<SubmitScoreResponse> | undefined, b: SubmitScoreResponse | PlainMessage<SubmitScoreResponse> | undefined): boolean;
-}
-
-/**
- * @generated from message neuroxis.v1.GetRankingsRequest
- */
-export declare class GetRankingsRequest extends Message<GetRankingsRequest> {
-  /**
-   * @generated from field: string game_type = 1;
-   */
-  gameType: string;
-
-  /**
-   * "GLOBAL", "US", "EU", "ASIA"
-   *
-   * @generated from field: string region = 2;
-   */
-  region: string;
-
-  /**
-   * @generated from field: int32 limit = 3;
+   * @generated from field: int32 limit = 4;
    */
   limit: number;
 
-  constructor(data?: PartialMessage<GetRankingsRequest>);
+  constructor(data?: PartialMessage<GetLeaderboardRequest>);
 
   static readonly runtime: typeof proto3;
-  static readonly typeName = "neuroxis.v1.GetRankingsRequest";
+  static readonly typeName = "neuroxis.v1.GetLeaderboardRequest";
   static readonly fields: FieldList;
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetRankingsRequest;
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetLeaderboardRequest;
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetRankingsRequest;
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetLeaderboardRequest;
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetRankingsRequest;
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetLeaderboardRequest;
 
-  static equals(a: GetRankingsRequest | PlainMessage<GetRankingsRequest> | undefined, b: GetRankingsRequest | PlainMessage<GetRankingsRequest> | undefined): boolean;
+  static equals(a: GetLeaderboardRequest | PlainMessage<GetLeaderboardRequest> | undefined, b: GetLeaderboardRequest | PlainMessage<GetLeaderboardRequest> | undefined): boolean;
 }
 
 /**
@@ -129,9 +54,9 @@ export declare class GetRankingsRequest extends Message<GetRankingsRequest> {
  */
 export declare class LeaderboardEntry extends Message<LeaderboardEntry> {
   /**
-   * @generated from field: int64 rank = 1;
+   * @generated from field: int32 rank = 1;
    */
-  rank: bigint;
+  rank: number;
 
   /**
    * @generated from field: string user_id = 2;
@@ -144,14 +69,29 @@ export declare class LeaderboardEntry extends Message<LeaderboardEntry> {
   username: string;
 
   /**
-   * @generated from field: int32 score = 4;
-   */
-  score: number;
-
-  /**
-   * @generated from field: string region = 5;
+   * @generated from field: string region = 4;
    */
   region: string;
+
+  /**
+   * @generated from field: string district = 5;
+   */
+  district: string;
+
+  /**
+   * @generated from field: int32 level = 6;
+   */
+  level: number;
+
+  /**
+   * @generated from field: int32 streak = 7;
+   */
+  streak: number;
+
+  /**
+   * @generated from field: int32 elo = 8;
+   */
+  elo: number;
 
   constructor(data?: PartialMessage<LeaderboardEntry>);
 
@@ -169,46 +109,121 @@ export declare class LeaderboardEntry extends Message<LeaderboardEntry> {
 }
 
 /**
- * @generated from message neuroxis.v1.GetRankingsResponse
+ * @generated from message neuroxis.v1.GetLeaderboardResponse
  */
-export declare class GetRankingsResponse extends Message<GetRankingsResponse> {
+export declare class GetLeaderboardResponse extends Message<GetLeaderboardResponse> {
   /**
    * @generated from field: bool success = 1;
    */
   success: boolean;
 
   /**
-   * @generated from field: string game_type = 2;
+   * @generated from field: int32 total = 2;
    */
-  gameType: string;
+  total: number;
 
   /**
-   * @generated from field: string region = 3;
+   * @generated from field: int32 page = 3;
    */
-  region: string;
+  page: number;
 
   /**
-   * @generated from field: repeated neuroxis.v1.LeaderboardEntry entries = 4;
+   * @generated from field: int32 page_count = 4;
+   */
+  pageCount: number;
+
+  /**
+   * @generated from field: repeated neuroxis.v1.LeaderboardEntry entries = 5;
    */
   entries: LeaderboardEntry[];
 
   /**
-   * @generated from field: string error = 5;
+   * @generated from field: string error = 6;
    */
   error: string;
 
-  constructor(data?: PartialMessage<GetRankingsResponse>);
+  constructor(data?: PartialMessage<GetLeaderboardResponse>);
 
   static readonly runtime: typeof proto3;
-  static readonly typeName = "neuroxis.v1.GetRankingsResponse";
+  static readonly typeName = "neuroxis.v1.GetLeaderboardResponse";
   static readonly fields: FieldList;
 
-  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetRankingsResponse;
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetLeaderboardResponse;
 
-  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetRankingsResponse;
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetLeaderboardResponse;
 
-  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetRankingsResponse;
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetLeaderboardResponse;
 
-  static equals(a: GetRankingsResponse | PlainMessage<GetRankingsResponse> | undefined, b: GetRankingsResponse | PlainMessage<GetRankingsResponse> | undefined): boolean;
+  static equals(a: GetLeaderboardResponse | PlainMessage<GetLeaderboardResponse> | undefined, b: GetLeaderboardResponse | PlainMessage<GetLeaderboardResponse> | undefined): boolean;
+}
+
+/**
+ * @generated from message neuroxis.v1.GetMyRankRequest
+ */
+export declare class GetMyRankRequest extends Message<GetMyRankRequest> {
+  /**
+   * "global", "region", "district"
+   *
+   * @generated from field: string type = 1;
+   */
+  type: string;
+
+  /**
+   * @generated from field: string filter = 2;
+   */
+  filter: string;
+
+  constructor(data?: PartialMessage<GetMyRankRequest>);
+
+  static readonly runtime: typeof proto3;
+  static readonly typeName = "neuroxis.v1.GetMyRankRequest";
+  static readonly fields: FieldList;
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetMyRankRequest;
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetMyRankRequest;
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetMyRankRequest;
+
+  static equals(a: GetMyRankRequest | PlainMessage<GetMyRankRequest> | undefined, b: GetMyRankRequest | PlainMessage<GetMyRankRequest> | undefined): boolean;
+}
+
+/**
+ * @generated from message neuroxis.v1.GetMyRankResponse
+ */
+export declare class GetMyRankResponse extends Message<GetMyRankResponse> {
+  /**
+   * @generated from field: bool success = 1;
+   */
+  success: boolean;
+
+  /**
+   * @generated from field: int32 rank = 2;
+   */
+  rank: number;
+
+  /**
+   * @generated from field: int32 elo = 3;
+   */
+  elo: number;
+
+  /**
+   * @generated from field: string error = 4;
+   */
+  error: string;
+
+  constructor(data?: PartialMessage<GetMyRankResponse>);
+
+  static readonly runtime: typeof proto3;
+  static readonly typeName = "neuroxis.v1.GetMyRankResponse";
+  static readonly fields: FieldList;
+
+  static fromBinary(bytes: Uint8Array, options?: Partial<BinaryReadOptions>): GetMyRankResponse;
+
+  static fromJson(jsonValue: JsonValue, options?: Partial<JsonReadOptions>): GetMyRankResponse;
+
+  static fromJsonString(jsonString: string, options?: Partial<JsonReadOptions>): GetMyRankResponse;
+
+  static equals(a: GetMyRankResponse | PlainMessage<GetMyRankResponse> | undefined, b: GetMyRankResponse | PlainMessage<GetMyRankResponse> | undefined): boolean;
 }
 

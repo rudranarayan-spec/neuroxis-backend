@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { GetRankingsRequest, GetRankingsResponse, SubmitScoreRequest, SubmitScoreResponse } from "./leaderboard_pb.js";
+import { GetLeaderboardRequest, GetLeaderboardResponse, GetMyRankRequest, GetMyRankResponse } from "./leaderboard_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -13,25 +13,21 @@ export const LeaderboardService = {
   typeName: "neuroxis.v1.LeaderboardService",
   methods: {
     /**
-     * Submit a score and get back updated rank/high score
-     *
-     * @generated from rpc neuroxis.v1.LeaderboardService.SubmitScore
+     * @generated from rpc neuroxis.v1.LeaderboardService.GetLeaderboard
      */
-    submitScore: {
-      name: "SubmitScore",
-      I: SubmitScoreRequest,
-      O: SubmitScoreResponse,
+    getLeaderboard: {
+      name: "GetLeaderboard",
+      I: GetLeaderboardRequest,
+      O: GetLeaderboardResponse,
       kind: MethodKind.Unary,
     },
     /**
-     * Fetch top players for a specific game and region
-     *
-     * @generated from rpc neuroxis.v1.LeaderboardService.GetRankings
+     * @generated from rpc neuroxis.v1.LeaderboardService.GetMyRank
      */
-    getRankings: {
-      name: "GetRankings",
-      I: GetRankingsRequest,
-      O: GetRankingsResponse,
+    getMyRank: {
+      name: "GetMyRank",
+      I: GetMyRankRequest,
+      O: GetMyRankResponse,
       kind: MethodKind.Unary,
     },
   }

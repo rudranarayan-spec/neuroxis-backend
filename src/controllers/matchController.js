@@ -6,11 +6,8 @@ import {
   processXpGain,
   processDailyStreak,
 } from "../utils/progression.js";
+import { leaderboardService } from "../services/leaderboardService.js";
 
-/**
- * Submit Match / Game Completion
- * Handles both Solo practice puzzles and 1v1 Ranked Duels
- */
 export const submitMatch = async (req, res) => {
   try {
     const {
@@ -131,6 +128,12 @@ export const submitMatch = async (req, res) => {
 
     await playerA.save();
 
+    // Sync new Elo to Redis Leaderboard
+    await leaderboardService.updateUserRank(playerA);
+    if (playerB) {
+      await leaderboardService.updateUserRank(playerB);
+    }
+
     // --- 4. RECORD MATCH RECORD IN MONGO ---
     const matchRecord = await Match.create({
       gameCategory,
@@ -166,9 +169,6 @@ export const submitMatch = async (req, res) => {
   }
 };
 
-/**
- * Get User Match History
- */
 export const getMatchHistory = async (req, res) => {
   try {
     const userId = req.user.id;

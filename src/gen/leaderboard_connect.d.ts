@@ -3,7 +3,7 @@
 /* eslint-disable */
 // @ts-nocheck
 
-import { GetRankingsRequest, GetRankingsResponse, SubmitScoreRequest, SubmitScoreResponse } from "./leaderboard_pb.js";
+import { GetLeaderboardRequest, GetLeaderboardResponse, GetMyRankRequest, GetMyRankResponse } from "./leaderboard_pb.js";
 import { MethodKind } from "@bufbuild/protobuf";
 
 /**
@@ -13,25 +13,21 @@ export declare const LeaderboardService: {
   readonly typeName: "neuroxis.v1.LeaderboardService",
   readonly methods: {
     /**
-     * Submit a score and get back updated rank/high score
-     *
-     * @generated from rpc neuroxis.v1.LeaderboardService.SubmitScore
+     * @generated from rpc neuroxis.v1.LeaderboardService.GetLeaderboard
      */
-    readonly submitScore: {
-      readonly name: "SubmitScore",
-      readonly I: typeof SubmitScoreRequest,
-      readonly O: typeof SubmitScoreResponse,
+    readonly getLeaderboard: {
+      readonly name: "GetLeaderboard",
+      readonly I: typeof GetLeaderboardRequest,
+      readonly O: typeof GetLeaderboardResponse,
       readonly kind: MethodKind.Unary,
     },
     /**
-     * Fetch top players for a specific game and region
-     *
-     * @generated from rpc neuroxis.v1.LeaderboardService.GetRankings
+     * @generated from rpc neuroxis.v1.LeaderboardService.GetMyRank
      */
-    readonly getRankings: {
-      readonly name: "GetRankings",
-      readonly I: typeof GetRankingsRequest,
-      readonly O: typeof GetRankingsResponse,
+    readonly getMyRank: {
+      readonly name: "GetMyRank",
+      readonly I: typeof GetMyRankRequest,
+      readonly O: typeof GetMyRankResponse,
       readonly kind: MethodKind.Unary,
     },
   }

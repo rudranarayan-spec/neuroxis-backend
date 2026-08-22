@@ -1,23 +1,30 @@
-import { LeaderboardService } from '../services/leaderboardService.js';
+import { leaderboardService } from '../services/leaderboardService.js';
 
-export const submitScore = async (req, res) => {
+export const getLeaderboard = async (req, res) => {
   try {
-    const { score, gameType } = req.body;
-    const { id: userId, username, region } = req.user;
+    const { type = 'global', filter = '', page = 1, limit = 10 } = req.query;
 
-    await LeaderboardService.submitScore(userId, username, score, gameType, region);
-    res.status(200).json({ success: true, message: 'Score synchronized with NEUROXIS network.' });
+    const data = await leaderboardService.getLeaderboard({
+      type,
+      filter,
+      page: Number(page),
+      limit: Number(limit),
+    });
+
+    res.status(200).json({ success: true, ...data });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 };
 
-export const getRankings = async (req, res) => {
+export const getMyRank = async (req, res) => {
   try {
-    const { gameType } = req.params;
-    const { region = 'GLOBAL', limit = 50 } = req.query;
-    const rankings = await LeaderboardService.getTopRankings(gameType, region, parseInt(limit));
-    res.status(200).json({ success: true, gameType, region, data: rankings });
+    const { type = 'global', filter = '' } = req.query;
+    const userId = req.user.id;
+
+    const rankData = await leaderboardService.getUserRank(userId, type, filter);
+
+    res.status(200).json({ success: true, ...rankData });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }

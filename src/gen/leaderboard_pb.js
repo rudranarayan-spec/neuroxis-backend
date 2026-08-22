@@ -6,40 +6,15 @@
 import { proto3 } from "@bufbuild/protobuf";
 
 /**
- * @generated from message neuroxis.v1.SubmitScoreRequest
+ * @generated from message neuroxis.v1.GetLeaderboardRequest
  */
-export const SubmitScoreRequest = /*@__PURE__*/ proto3.makeMessageType(
-  "neuroxis.v1.SubmitScoreRequest",
+export const GetLeaderboardRequest = /*@__PURE__*/ proto3.makeMessageType(
+  "neuroxis.v1.GetLeaderboardRequest",
   () => [
-    { no: 1, name: "game_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "score", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 3, name: "execution_time_ms", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-  ],
-);
-
-/**
- * @generated from message neuroxis.v1.SubmitScoreResponse
- */
-export const SubmitScoreResponse = /*@__PURE__*/ proto3.makeMessageType(
-  "neuroxis.v1.SubmitScoreResponse",
-  () => [
-    { no: 1, name: "success", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 2, name: "new_high_score", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 3, name: "global_rank", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 4, name: "regional_rank", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
-    { no: 5, name: "error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-  ],
-);
-
-/**
- * @generated from message neuroxis.v1.GetRankingsRequest
- */
-export const GetRankingsRequest = /*@__PURE__*/ proto3.makeMessageType(
-  "neuroxis.v1.GetRankingsRequest",
-  () => [
-    { no: 1, name: "game_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 2, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 1, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "filter", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 3, name: "page", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 4, name: "limit", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ],
 );
 
@@ -49,25 +24,53 @@ export const GetRankingsRequest = /*@__PURE__*/ proto3.makeMessageType(
 export const LeaderboardEntry = /*@__PURE__*/ proto3.makeMessageType(
   "neuroxis.v1.LeaderboardEntry",
   () => [
-    { no: 1, name: "rank", kind: "scalar", T: 3 /* ScalarType.INT64 */ },
+    { no: 1, name: "rank", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
     { no: 2, name: "user_id", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 3, name: "username", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "score", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
-    { no: 5, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 4, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 5, name: "district", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 6, name: "level", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 7, name: "streak", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 8, name: "elo", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ],
 );
 
 /**
- * @generated from message neuroxis.v1.GetRankingsResponse
+ * @generated from message neuroxis.v1.GetLeaderboardResponse
  */
-export const GetRankingsResponse = /*@__PURE__*/ proto3.makeMessageType(
-  "neuroxis.v1.GetRankingsResponse",
+export const GetLeaderboardResponse = /*@__PURE__*/ proto3.makeMessageType(
+  "neuroxis.v1.GetLeaderboardResponse",
   () => [
     { no: 1, name: "success", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
-    { no: 2, name: "game_type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 3, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */ },
-    { no: 4, name: "entries", kind: "message", T: LeaderboardEntry, repeated: true },
-    { no: 5, name: "error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "total", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 3, name: "page", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 4, name: "page_count", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 5, name: "entries", kind: "message", T: LeaderboardEntry, repeated: true },
+    { no: 6, name: "error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ],
+);
+
+/**
+ * @generated from message neuroxis.v1.GetMyRankRequest
+ */
+export const GetMyRankRequest = /*@__PURE__*/ proto3.makeMessageType(
+  "neuroxis.v1.GetMyRankRequest",
+  () => [
+    { no: 1, name: "type", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+    { no: 2, name: "filter", kind: "scalar", T: 9 /* ScalarType.STRING */ },
+  ],
+);
+
+/**
+ * @generated from message neuroxis.v1.GetMyRankResponse
+ */
+export const GetMyRankResponse = /*@__PURE__*/ proto3.makeMessageType(
+  "neuroxis.v1.GetMyRankResponse",
+  () => [
+    { no: 1, name: "success", kind: "scalar", T: 8 /* ScalarType.BOOL */ },
+    { no: 2, name: "rank", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 3, name: "elo", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 4, name: "error", kind: "scalar", T: 9 /* ScalarType.STRING */ },
   ],
 );
 
