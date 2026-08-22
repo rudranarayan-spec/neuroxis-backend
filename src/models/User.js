@@ -9,13 +9,31 @@ const userSchema = new mongoose.Schema(
     email: { type: String, required: true, unique: true },
     passwordHash: { type: String, required: true, select: false },
     region: { type: String, default: "GLOBAL", uppercase: true, index: true },
+    district: { type: String, default: "UNKNOWN", index: true },
+
+    // --- 1. COMPETITIVE SKILL (Elo Ratings) ---
     globalElo: { type: Number, default: 1200, index: true },
     gameElo: {
       quickMath: { type: Number, default: 1200 },
       sudoku: { type: Number, default: 1200 },
       memory: { type: Number, default: 1200 },
       wordGame: { type: Number, default: 1200 },
+      matics: { type: Number, default: 1200 },
     },
+
+    // --- 2. PROGRESSION & EXPERIENCE (XP & Levels) ---
+    xp: { type: Number, default: 0, index: true },
+    level: { type: Number, default: 1 },
+
+    // --- 3. DAILY ENGAGEMENT (Streaks) ---
+    streak: {
+      currentStreak: { type: Number, default: 0 },
+      longestStreak: { type: Number, default: 0 },
+      lastPlayedDate: { type: Date, default: null },
+    streakFreezeCount: { type: Number, default: 0 },
+    },
+
+    // Fair Play & Security
     fairPlayScore: { type: Number, default: 100 },
     isBanned: { type: Boolean, default: false },
 
@@ -45,16 +63,12 @@ userSchema.methods.generateAuthToken = function () {
   );
 };
 
-// Generate and hash password reset token (valid for 10 minutes)
 userSchema.methods.getResetPasswordToken = function () {
   const resetToken = randomBytes(32).toString("hex");
-
   this.resetPasswordToken = createHash("sha256")
     .update(resetToken)
     .digest("hex");
-
   this.resetPasswordExpire = Date.now() + 10 * 60 * 1000;
-
   return resetToken;
 };
 

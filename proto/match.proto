@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package neuroxis.v1;
+
+service MatchService {
+  rpc SubmitMatch (SubmitMatchRequest) returns (SubmitMatchResponse);
+  rpc GetMatchHistory (GetMatchHistoryRequest) returns (GetMatchHistoryResponse);
+}
+
+message MoveLogEntry {
+  int32 timestamp_ms = 1;
+  string action = 2;
+}
+
+message SubmitMatchRequest {
+  string game_category = 1; // "quickMath", "sudoku", "memory", "wordGame", "matics"
+  string mode = 2;          // "SOLO", "DUEL_1V1"
+  string opponent_id = 3;   // Optional for SOLO
+  int32 score_a = 4;
+  int32 score_b = 5;
+  int32 duration_ms = 6;
+  string puzzle_seed = 7;
+  repeated MoveLogEntry move_log = 8;
+}
+
+message SubmitMatchResponse {
+  bool success = 1;
+  string match_id = 2;
+  int32 xp_gained = 3;
+  bool leveled_up = 4;
+  int32 new_level = 5;
+  int32 current_streak = 6;
+  int32 global_elo = 7;
+  int32 category_elo = 8;
+  int32 elo_change = 9;
+  string error = 10;
+}
+
+message GetMatchHistoryRequest {
+  int32 page = 1;
+  int32 limit = 2;
+}
+
+message MatchItem {
+  string id = 1;
+  string game_category = 2;
+  string mode = 3;
+  string player_a_id = 4;
+  string player_a_username = 5;
+  string player_b_id = 6;
+  string player_b_username = 7;
+  int32 score_a = 8;
+  int32 score_b = 9;
+  string winner_id = 10;
+  bool is_draw = 11;
+  int32 player_a_elo_change = 12;
+  int32 duration_ms = 13;
+  string created_at = 14;
+}
+
+message GetMatchHistoryResponse {
+  bool success = 1;
+  int32 count = 2;
+  int32 page = 3;
+  repeated MatchItem matches = 4;
+  string error = 5;
+}

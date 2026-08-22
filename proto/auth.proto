@@ -29,6 +29,9 @@ message User {
   string email = 3;
   string region = 4;
   int32 global_elo = 5;
+  int32 xp = 7;
+  int32 level = 8;
+  int32 current_streak = 9;
 }
 
 message AuthResponse {

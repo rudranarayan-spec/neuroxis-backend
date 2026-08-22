@@ -105,6 +105,21 @@ export declare class User extends Message<User> {
    */
   globalElo: number;
 
+  /**
+   * @generated from field: int32 xp = 7;
+   */
+  xp: number;
+
+  /**
+   * @generated from field: int32 level = 8;
+   */
+  level: number;
+
+  /**
+   * @generated from field: int32 current_streak = 9;
+   */
+  currentStreak: number;
+
   constructor(data?: PartialMessage<User>);
 
   static readonly runtime: typeof proto3;

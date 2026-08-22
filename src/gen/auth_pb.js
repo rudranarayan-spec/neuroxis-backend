@@ -42,6 +42,9 @@ export const User = /*@__PURE__*/ proto3.makeMessageType(
     { no: 3, name: "email", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 4, name: "region", kind: "scalar", T: 9 /* ScalarType.STRING */ },
     { no: 5, name: "global_elo", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 7, name: "xp", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 8, name: "level", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
+    { no: 9, name: "current_streak", kind: "scalar", T: 5 /* ScalarType.INT32 */ },
   ],
 );
 

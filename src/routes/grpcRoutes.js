@@ -1,0 +1,18 @@
+import { expressConnectMiddleware } from '@connectrpc/connect-express';
+
+// Import Services
+import { AuthService } from '../gen/auth_connect.js';
+import { MatchService } from '../gen/match_connect.js';
+
+// Import Controllers
+import { grpcAuthController } from '../controllers/grpc/grpcAuthController.js';
+import { grpcMatchController } from '../controllers/grpc/grpcMatchController.js';
+
+export const grpcRouter = expressConnectMiddleware({
+  routes(router) {
+    router.service(AuthService, grpcAuthController);
+    router.service(MatchService, grpcMatchController);
+  },
+  // Allow JSON parsing over HTTP 1.1/2
+  acceptCompression: [],
+});

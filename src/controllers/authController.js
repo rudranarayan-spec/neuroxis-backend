@@ -1,5 +1,5 @@
 import { User } from "../models/User.js";
-import { createHash } from 'node:crypto';
+import { createHash } from "node:crypto";
 
 export const register = async (req, res) => {
   try {
@@ -17,7 +17,7 @@ export const register = async (req, res) => {
       username,
       email,
       passwordHash: password,
-      region: region ? region.toUpperCase() : "GLOBAL",
+      region: region ? region.toUpperCase() : "INDIA",
     });
 
     const token = user.generateAuthToken();
@@ -31,6 +31,9 @@ export const register = async (req, res) => {
         email: user.email,
         region: user.region,
         globalElo: user.globalElo,
+        xp: user.xp,
+        level: user.level,
+        streak: user.streak,
       },
     });
   } catch (error) {
@@ -66,6 +69,9 @@ export const login = async (req, res) => {
         email: user.email,
         region: user.region,
         globalElo: user.globalElo,
+        xp: user.xp,
+        level: user.level,
+        streak: user.streak,
       },
     });
   } catch (error) {
@@ -104,9 +110,7 @@ export const resetPassword = async (req, res) => {
     const { token, newPassword } = req.body;
 
     // Hash raw token from client to compare with DB record
-    const resetPasswordToken = createHash("sha256")
-      .update(token)
-      .digest("hex");
+    const resetPasswordToken = createHash("sha256").update(token).digest("hex");
 
     const user = await User.findOne({
       resetPasswordToken,

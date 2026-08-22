@@ -1,4 +1,4 @@
-import { User } from "../models/User.js";
+import { User } from "../../models/User.js";
 
 export const grpcAuthController = {
   async register(req) {
@@ -37,6 +37,9 @@ export const grpcAuthController = {
           email: user.email,
           region: user.region,
           globalElo: user.globalElo,
+          xp: user.xp,
+          level: user.level,
+          currentStreak: user.streak?.currentStreak || 0,
         },
         error: "",
       };
