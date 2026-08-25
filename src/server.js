@@ -41,13 +41,14 @@ app.use(express.urlencoded({ extended: true }));
 
 await connectDB();
 
-// 4. Mount REST API Routes
 app.use('/api/v1', restRoutes);
 
 const PORT = process.env.PORT || 5001;
-app.listen(PORT, () => {
+const HOST = '0.0.0.0';
+
+app.listen(PORT, HOST, () => {
   console.log(`\n=================================`);
-  console.log(`  NEUROXIS REST + gRPC ENGINE     `);
-  console.log(`  Port: ${PORT}                  `);
+  console.log(`   NEUROXIS REST + gRPC ENGINE     `);
+  console.log(`   Host: http://${HOST}:${PORT}   `);
   console.log(`=================================\n`);
 });
