@@ -1,49 +1,117 @@
-import { gameService } from '../services/gameService.js';
+import { Puzzle } from '../models/Puzzle.js';
+import { GameSession } from '../models/GameSession.js';
+import { User } from '../models/User.js';
 
-export const createRoom = async (req, res) => {
+// 1. Fetch a random puzzle board (hides solution)
+export const getPuzzle = async (req, res) => {
   try {
-    const playerAId = req.user.id;
-    const { opponentId, gameCategory = 'quickMath' } = req.body;
+    const { gameId } = req.params;
+    const { difficulty = 'EASY', gridSize = 6 } = req.query;
 
-    if (!opponentId) {
-      return res.status(400).json({ success: false, error: 'Opponent ID is required' });
+    const count = await Puzzle.countDocuments({
+      gameId,
+      difficulty,
+      gridSize: Number(gridSize),
+    });
+
+    if (count === 0) {
+      return res.status(404).json({ success: false, message: 'No puzzles found for this mode.' });
     }
 
-    const room = await gameService.createGameRoom(playerAId, opponentId, gameCategory);
-    res.status(201).json({ success: true, room });
+    const random = Math.floor(Math.random() * count);
+    const puzzle = await Puzzle.findOne({
+      gameId,
+      difficulty,
+      gridSize: Number(gridSize),
+    })
+      .skip(random)
+      .select('-solution');
+
+    return res.status(200).json({ success: true, puzzle });
   } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
+    return res.status(500).json({ success: false, error: error.message });
   }
 };
 
-export const submitMoveTelemetry = async (req, res) => {
+// 2. Start a new game session
+export const startGame = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const { roomId, moveIndex, action, scoreDelta } = req.body;
+    const { gameId, puzzleId } = req.body;
+    const userId = req.user._id;
 
-    if (!roomId || moveIndex === undefined || !action) {
-      return res.status(400).json({ success: false, error: 'Missing required telemetry fields' });
-    }
+    const session = await GameSession.create({
+      userId,
+      gameId,
+      puzzleId: puzzleId || null,
+      startTime: new Date(),
+    });
 
-    const result = await gameService.submitTelemetry(roomId, userId, { moveIndex, action, scoreDelta });
-    res.status(200).json({ success: true, telemetry: result });
+    return res.status(201).json({
+      success: true,
+      sessionId: session._id,
+      startTime: session.startTime,
+    });
   } catch (error) {
-    res.status(400).json({ success: false, error: error.message });
+    return res.status(500).json({ success: false, error: error.message });
   }
 };
 
-export const settleGameResult = async (req, res) => {
+// 3. Submit solution, verify board, update User XP
+export const submitGame = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const { roomId, finalScore, durationMs } = req.body;
+    const { sessionId, userBoard, clientTimeElapsed } = req.body;
+    const userId = req.user._id;
 
-    if (!roomId || finalScore === undefined) {
-      return res.status(400).json({ success: false, error: 'Room ID and final score are required' });
+    const session = await GameSession.findById(sessionId);
+    if (!session || session.status !== 'IN_PROGRESS') {
+      return res.status(400).json({ success: false, message: 'Invalid or expired session.' });
     }
 
-    const settledRoom = await gameService.settleMatch(roomId, userId, Number(finalScore), Number(durationMs || 0));
-    res.status(200).json({ success: true, room: settledRoom });
+    const puzzle = await Puzzle.findById(session.puzzleId);
+    if (!puzzle) {
+      return res.status(404).json({ success: false, message: 'Puzzle template missing.' });
+    }
+
+    // Verify Board Matrix against Solution
+    const isCorrect = JSON.stringify(userBoard) === JSON.stringify(puzzle.solution);
+
+    if (!isCorrect) {
+      return res.status(400).json({
+        success: false,
+        message: 'Solution incorrect. Review your numbers and try again.',
+      });
+    }
+
+    // Calculate duration & XP
+    const endTime = new Date();
+    const durationInSeconds = Math.floor((endTime - new Date(session.startTime)) / 1000);
+
+    let xpEarned = puzzle.gridSize === 6 ? 50 : 120;
+    if (clientTimeElapsed < 120) xpEarned += 20;
+
+    // Update Session
+    session.status = 'COMPLETED';
+    session.endTime = endTime;
+    session.durationInSeconds = durationInSeconds;
+    session.xpEarned = xpEarned;
+    await session.save();
+
+    // Update User Profile
+    await User.findByIdAndUpdate(userId, {
+      $inc: {
+        xp: xpEarned,
+        'stats.matches': 1,
+        'stats.wins': 1,
+      },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'VICTORY! Grid decrypted.',
+      xpEarned,
+      durationInSeconds,
+    });
   } catch (error) {
-    res.status(400).json({ success: false, error: error.message });
+    return res.status(500).json({ success: false, error: error.message });
   }
 };

@@ -1,11 +1,11 @@
-import { Router } from 'express';
-import { createRoom, submitMoveTelemetry, settleGameResult } from '../controllers/gameController.js';
-import { protect } from '../middleware/auth.js';
+import express from 'express';
+import { startGame, getPuzzle, submitGame } from '../controllers/gameController.js';
+import { protect } from '../middleware/auth.js'; 
 
-const router = Router();
+const router = express.Router();
 
-router.post('/room/create', protect, createRoom);
-router.post('/telemetry', protect, submitMoveTelemetry);
-router.post('/settle', protect, settleGameResult);
+router.get('/:gameId/puzzles', protect, getPuzzle);
+router.post('/start', protect, startGame);
+router.post('/submit', protect, submitGame);
 
 export default router;
