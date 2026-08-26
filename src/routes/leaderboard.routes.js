@@ -4,7 +4,7 @@ import { protect } from '../middleware/auth.js';
 
 const router = Router();
 
-router.get('/', getLeaderboard);
+router.get('/', protect, getLeaderboard);
 router.get('/me', protect, getMyRank);
 
 export default router;
