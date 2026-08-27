@@ -3,6 +3,7 @@ import { GameSession } from "../models/GameSession.js";
 import { User } from "../models/User.js";
 import { updateDailyStreak } from "../utils/updateStreak.js";
 import { validateShikakuSolution } from "../utils/shikakuGenerator.js";
+import { generateEchoSequence } from "../utils/echoPatternGenerator.js";
 
 // 1. Fetch a random puzzle board (hides solution)
 export const getPuzzle = async (req, res) => {
@@ -40,13 +41,37 @@ export const getPuzzle = async (req, res) => {
 // 2. Start a new game session
 export const startGame = async (req, res) => {
   try {
-    const { gameId, puzzleId } = req.body;
+    const { gameId, sequenceLength = 5, gridSize = 9 } = req.body;
     const userId = req.user._id;
 
+    // Handle Echo Pattern (dynamic sequence generation)
+    if (gameId === "echoPattern" || gameId === "memory") {
+      const generatedSequence = generateEchoSequence(
+        Number(sequenceLength),
+        Number(gridSize),
+      );
+
+      const session = await GameSession.create({
+        userId,
+        gameId,
+        puzzleId: null,
+        startTime: new Date(),
+        targetSequence: generatedSequence,
+      });
+
+      return res.status(201).json({
+        success: true,
+        sessionId: session._id,
+        sequence: generatedSequence,
+        startTime: session.startTime,
+      });
+    }
+
+    // Existing Logic for Sudoku / Shikaku
     const session = await GameSession.create({
       userId,
       gameId,
-      puzzleId: puzzleId || null,
+      puzzleId: req.body.puzzleId || null,
       startTime: new Date(),
     });
 
@@ -63,7 +88,8 @@ export const startGame = async (req, res) => {
 // 3. Submit solution, verify board, update User XP & Daily Streak
 export const submitGame = async (req, res) => {
   try {
-    const { sessionId, userBoard, rects, clientTimeElapsed } = req.body;
+    const { sessionId, userSequence, userBoard, rects, clientTimeElapsed } =
+      req.body;
     const userId = req.user._id;
 
     const session = await GameSession.findById(sessionId);
@@ -73,19 +99,20 @@ export const submitGame = async (req, res) => {
         .json({ success: false, message: "Invalid or expired session." });
     }
 
-    const puzzle = await Puzzle.findById(session.puzzleId);
-    if (!puzzle) {
-      return res
-        .status(404)
-        .json({ success: false, message: "Puzzle template missing." });
-    }
-
     let isCorrect = false;
-    let failureReason = "Solution incorrect.";
+    let failureReason = "Sequence incorrect.";
 
     // GAME ROUTING LOGIC
-    if (session.gameId === "shikaku") {
-      // Validate Shikaku dynamically via geometry & clue rules
+    if (session.gameId === "echoPattern" || session.gameId === "memory") {
+      // Compare user tap sequence against the session's target sequence
+      isCorrect = JSON.stringify(userSequence) === JSON.stringify(session.targetSequence);
+    } else if (session.gameId === "shikaku") {
+      const puzzle = await Puzzle.findById(session.puzzleId);
+      if (!puzzle)
+        return res
+          .status(404)
+          .json({ success: false, message: "Puzzle missing." });
+
       const validation = validateShikakuSolution(
         puzzle.board,
         rects,
@@ -94,15 +121,19 @@ export const submitGame = async (req, res) => {
       isCorrect = validation.valid;
       if (!isCorrect) failureReason = validation.message;
     } else {
-      // Direct Matrix Comparison for Sudoku / standard grid games
+      const puzzle = await Puzzle.findById(session.puzzleId);
+      if (!puzzle)
+        return res
+          .status(404)
+          .json({ success: false, message: "Puzzle missing." });
+
       isCorrect = JSON.stringify(userBoard) === JSON.stringify(puzzle.solution);
     }
 
     if (!isCorrect) {
-      return res.status(400).json({
-        success: false,
-        message: failureReason,
-      });
+      session.status = "COMPLETED"; // Or ABANDONED based on game flow
+      await session.save();
+      return res.status(400).json({ success: false, message: failureReason });
     }
 
     // Calculate duration & XP
@@ -111,9 +142,10 @@ export const submitGame = async (req, res) => {
       (endTime - new Date(session.startTime)) / 1000,
     );
 
-    let xpEarned =
-      puzzle.gridSize === 5 ? 40 : puzzle.gridSize === 7 ? 80 : 120;
-    if (clientTimeElapsed < 120) xpEarned += 20;
+    // XP calculation scaled for sequence recall
+    const sequenceLength = session.targetSequence?.length || 5;
+    let xpEarned = sequenceLength * 15;
+    if (clientTimeElapsed < 10) xpEarned += 25; // Speed bonus
 
     // Finalize Game Session
     session.status = "COMPLETED";
@@ -122,7 +154,7 @@ export const submitGame = async (req, res) => {
     session.xpEarned = xpEarned;
     await session.save();
 
-    // Update User XP, Game-Specific Elo & Daily Streak
+    // Update User XP, Game-Specific Elo (`gameElo.memory`) & Daily Streak
     const user = await User.findById(userId);
 
     if (user) {
@@ -130,17 +162,16 @@ export const submitGame = async (req, res) => {
 
       user.xp = (user.xp || 0) + xpEarned;
 
-      // Update Game-Specific Elo rating for Shikaku
       if (!user.gameElo) user.gameElo = {};
-      user.gameElo.shikaku = (user.gameElo?.shikaku || 1200) + 15;
-      user.globalElo = (user.globalElo || 1200) + 10;
+      user.gameElo.memory = (user.gameElo?.memory || 1200) + 12;
+      user.globalElo = (user.globalElo || 1200) + 8;
 
       await user.save();
     }
 
     return res.status(200).json({
       success: true,
-      message: "VICTORY! Grid decrypted.",
+      message: "PATTERN RECALLED PERFECTLY!",
       xpEarned,
       durationInSeconds,
       currentStreak: user?.streak?.currentStreak || 1,
