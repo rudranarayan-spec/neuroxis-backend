@@ -19,6 +19,7 @@ const userSchema = new mongoose.Schema(
       memory: { type: Number, default: 1200 },
       wordGame: { type: Number, default: 1200 },
       matics: { type: Number, default: 1200 },
+      shikaku: { type: Number, default: 1200 },
     },
 
     // --- 2. PROGRESSION & EXPERIENCE (XP & Levels) ---

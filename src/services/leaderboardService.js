@@ -1,100 +1,107 @@
-import { redis } from '../config/redis.js';
-import { User } from '../models/User.js';
+import { redis } from "../config/redis.js";
+import { User } from "../models/User.js";
 
-/**
- * Production Redis Leaderboard Service for NEUROXIS
- */
+const getLeaderboardKey = (type, filter) => {
+  switch (type) {
+    case "region":
+      return `leaderboard:region:${filter.toUpperCase()}`;
+    case "district":
+      return `leaderboard:district:${filter.toLowerCase()}`;
+    case "game":
+      return `leaderboard:game:${filter.toLowerCase()}`;
+    case "xp":
+      return `leaderboard:xp`;
+    case "global":
+    default:
+      return `leaderboard:global`;
+  }
+};
+
 export const leaderboardService = {
-  /**
-   * Upsert user score into Global, Regional, and District Redis Leaderboards
-   * 
-   * @param {Object} user 
-   * @param {string} user.id 
-   * @param {number} user.globalElo 
-   * @param {string} user.region 
-   * @param {string} user.district 
-   */
   async updateUserRank(user) {
     try {
-      if (!redis.status || redis.status !== 'ready') {
-        await redis.connect();
-      }
+      if (redis.status !== "ready") await redis.connect();
 
       const userId = user.id || user._id.toString();
-      const score = user.globalElo || 1200;
-
       const pipeline = redis.pipeline();
 
-      // 1. Global Leaderboard
-      pipeline.zadd('leaderboard:global', score, userId);
-
-      // 2. Regional Leaderboard
-      if (user.region) {
-        pipeline.zadd(`leaderboard:region:${user.region.toUpperCase()}`, score, userId);
+      // 1. Global ELO
+      if (user.globalElo !== undefined) {
+        pipeline.zadd("leaderboard:global", user.globalElo, userId);
       }
 
-      // 3. District Leaderboard
-      if (user.district) {
-        pipeline.zadd(`leaderboard:district:${user.district.toLowerCase()}`, score, userId);
+      // 2. XP Leaderboard
+      if (user.xp !== undefined) {
+        pipeline.zadd("leaderboard:xp", user.xp, userId);
+      }
+
+      // 3. Regional Leaderboard
+      if (user.region && user.globalElo !== undefined) {
+        pipeline.zadd(
+          `leaderboard:region:${user.region.toUpperCase()}`,
+          user.globalElo,
+          userId,
+        );
+      }
+
+      // 4. District Leaderboard
+      if (user.district && user.globalElo !== undefined) {
+        pipeline.zadd(
+          `leaderboard:district:${user.district.toLowerCase()}`,
+          user.globalElo,
+          userId,
+        );
+      }
+
+      // 5. Per-Game ELO (If user has gameElo map)
+      if (user.gameElo && typeof user.gameElo === "object") {
+        for (const [gameType, score] of Object.entries(user.gameElo)) {
+          pipeline.zadd(
+            `leaderboard:game:${gameType.toLowerCase()}`,
+            score,
+            userId,
+          );
+        }
       }
 
       await pipeline.exec();
     } catch (err) {
-      console.error('[Leaderboard Error] Failed to update rank:', err.message);
+      console.error("[Leaderboard Error] Failed to update rank:", err.message);
     }
   },
 
-  /**
-   * Fetch Paginated Leaderboard
-   * 
-   * @param {Object} params
-   * @param {string} [params.type='global'] - 'global', 'region', or 'district'
-   * @param {string} [params.filter=''] - Specific region name or district name
-   * @param {number} [params.page=1]
-   * @param {number} [params.limit=10]
-   */
-  async getLeaderboard({ type = 'global', filter = '', page = 1, limit = 10 }) {
+  async getLeaderboard({ type = "global", filter = "", page = 1, limit = 20 }) {
     try {
-      if (!redis.status || redis.status !== 'ready') {
-        await redis.connect();
-      }
+      if (redis.status !== "ready") await redis.connect();
 
-      let key = 'leaderboard:global';
-      if (type === 'region' && filter) {
-        key = `leaderboard:region:${filter.toUpperCase()}`;
-      } else if (type === 'district' && filter) {
-        key = `leaderboard:district:${filter.toLowerCase()}`;
-      }
-
+      const key = getLeaderboardKey(type, filter);
       const start = (page - 1) * limit;
       const stop = start + limit - 1;
 
-      // ZREVRANGE fetches highest scores first (Rank 0 = Score MAX)
-      // WITHSCORES returns array: [userId1, score1, userId2, score2, ...]
-      const rawResults = await redis.zrevrange(key, start, stop, 'WITHSCORES');
+      // ZREVRANGE retrieves items sorted from highest to lowest score
+      const rawResults = await redis.zrevrange(key, start, stop, "WITHSCORES");
       const totalEntries = await redis.zcard(key);
 
       if (!rawResults.length) {
         return { total: 0, page, pageCount: 0, entries: [] };
       }
 
-      // Parse [userId, score, userId, score] into formatted objects
       const userIds = [];
       const scoresMap = {};
 
       for (let i = 0; i < rawResults.length; i += 2) {
-        const userId = rawResults[i];
+        const id = rawResults[i];
         const score = parseInt(rawResults[i + 1], 10);
-        userIds.push(userId);
-        scoresMap[userId] = score;
+        userIds.push(id);
+        scoresMap[id] = score;
       }
 
-      // Populate user profiles from Mongo
-      const users = await User.find({ _id: { $in: userIds } })
-        .select('username region district level streak avatar')
+      // Populate user profiles from MongoDB
+      const users = await User.find({ _id: { $in: userIds }, isBanned: false })
+        .select("username region district level streak avatar xp globalElo")
         .lean();
 
-      // Map profiles with exact rank position
+      // Maintain order returned by Redis ZREVRANGE
       const entries = userIds
         .map((id, index) => {
           const profile = users.find((u) => u._id.toString() === id);
@@ -104,11 +111,12 @@ export const leaderboardService = {
             rank: start + index + 1,
             userId: id,
             username: profile.username,
+            avatar: profile.avatar || null,
             region: profile.region,
             district: profile.district,
             level: profile.level,
             streak: profile.streak?.currentStreak || 0,
-            elo: scoresMap[id],
+            score: scoresMap[id],
           };
         })
         .filter(Boolean);
@@ -120,43 +128,39 @@ export const leaderboardService = {
         entries,
       };
     } catch (err) {
-      console.error('[Leaderboard Error] Failed to fetch leaderboard:', err.message);
+      console.error(
+        "[Leaderboard Error] Failed to fetch leaderboard:",
+        err.message,
+      );
       throw err;
     }
   },
 
   /**
-   * Get specific user's rank and surrounding competitors
-   * 
-   * @param {string} userId 
-   * @param {string} [type='global'] 
-   * @param {string} [filter=''] 
+   * Get specific user rank
    */
-  async getUserRank(userId, type = 'global', filter = '') {
+  async getUserRank(userId, type = "global", filter = "") {
     try {
-      if (!redis.status || redis.status !== 'ready') {
-        await redis.connect();
-      }
+      if (redis.status !== "ready") await redis.connect();
 
-      let key = 'leaderboard:global';
-      if (type === 'region' && filter) key = `leaderboard:region:${filter.toUpperCase()}`;
-      if (type === 'district' && filter) key = `leaderboard:district:${filter.toLowerCase()}`;
-
-      // ZREVRANK returns 0-indexed position (highest score = 0)
+      const key = getLeaderboardKey(type, filter);
       const rankIndex = await redis.zrevrank(key, userId.toString());
       const score = await redis.zscore(key, userId.toString());
 
       if (rankIndex === null) {
-        return { rank: null, elo: null };
+        return { rank: null, score: null };
       }
 
       return {
         rank: rankIndex + 1,
-        elo: parseInt(score, 10),
+        score: parseInt(score, 10),
       };
     } catch (err) {
-      console.error('[Leaderboard Error] Failed to get user rank:', err.message);
-      return { rank: null, elo: null };
+      console.error(
+        "[Leaderboard Error] Failed to get user rank:",
+        err.message,
+      );
+      return { rank: null, score: null };
     }
   },
 };
