@@ -1,6 +1,7 @@
 import { GameSession } from "../models/GameSession.js";
 import { Match } from "../models/Match.js";
 import { User } from "../models/User.js";
+import { userService } from "../services/userService.js";
 
 export const getProfile = async (req, res) => {
   try {

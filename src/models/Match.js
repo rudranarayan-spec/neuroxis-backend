@@ -6,7 +6,7 @@ const matchSchema = new mongoose.Schema(
     gameCategory: {
       type: String,
       required: [true, 'Game category is required'],
-      enum: ['quickMath', 'sudoku', 'memory', 'wordGame', 'matics'],
+      enum: ['quickMath', 'sudoku', 'memory', 'wordGame', 'matics', 'echoPattern', 'shikaku'],
       index: true,
     },
     mode: {
