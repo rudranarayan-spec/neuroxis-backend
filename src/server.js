@@ -1,5 +1,8 @@
 import 'dotenv/config';
 import dns from 'node:dns';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import { setupMatchmaking } from './sockets/matchmaking.js';
 
 dns.setServers(['1.1.1.1', '8.8.8.8']);
 
@@ -10,8 +13,20 @@ import restRoutes from './routes/index.js';
 import { grpcRouter } from './routes/grpcRoutes.js';
 
 const app = express();
+const httpServer = createServer(app);
 
-// 1. Configure CORS to accept ConnectRPC headers
+// 1. Initialize Socket.io on httpServer
+const io = new Server(httpServer, {
+  cors: {
+    origin: '*',
+    methods: ['GET', 'POST'],
+  },
+});
+
+// 2. Setup Matchmaking Socket Handlers
+setupMatchmaking(io);
+
+// 3. Configure CORS to accept ConnectRPC headers
 app.use(
   cors({
     origin: '*',
@@ -32,10 +47,10 @@ app.use(
   })
 );
 
-// 2. Mount gRPC ConnectRPC Router FIRST (before express.json)
+// 4. Mount gRPC ConnectRPC Router
 app.use(grpcRouter);
 
-// 3. Express Body Parsers (For standard REST routes only)
+// 5. Express Body Parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -46,9 +61,10 @@ app.use('/api/v1', restRoutes);
 const PORT = process.env.PORT || 5001;
 const HOST = '0.0.0.0';
 
-app.listen(PORT, HOST, () => {
+// 6. Use httpServer.listen instead of app.listen
+httpServer.listen(PORT, HOST, () => {
   console.log(`\n=================================`);
-  console.log(`   NEUROXIS REST + gRPC ENGINE     `);
+  console.log(`   NEUROXIS REST + gRPC + SOCKET ENGINE     `);
   console.log(`   Host: http://${HOST}:${PORT}   `);
   console.log(`=================================\n`);
 });
