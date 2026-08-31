@@ -6,6 +6,7 @@ import matchRoutes from './match.routes.js';
 import matchmakingRoutes from './matchmaking.routes.js';
 import userRoutes from './user.routes.js';
 import gameRoutes from './game.routes.js';
+import friendRoutes from './friends.routes.js';
 
 const router = Router();
 
@@ -16,5 +17,6 @@ router.use('/leaderboard', leaderboardRoutes);
 router.use('/matches', matchRoutes);
 router.use('/matchmaking', matchmakingRoutes);
 router.use('/game', gameRoutes);
+router.use('/friends', friendRoutes);
 
 export default router;
