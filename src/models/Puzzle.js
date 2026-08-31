@@ -9,7 +9,7 @@ const puzzleSchema = new mongoose.Schema(
       default: 'EASY',
     },
     gridSize: { type: Number, default: 6 },
-    board: { type: [[Number]], required: true },
+    board: { type: mongoose.Schema.Types.Mixed },
     solution: { type: [[Number]], required: true },
   },
   { timestamps: true }

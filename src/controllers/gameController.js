@@ -41,8 +41,33 @@ export const getPuzzle = async (req, res) => {
 // 2. Start a new game session
 export const startGame = async (req, res) => {
   try {
-    const { gameId, sequenceLength = 5, gridSize = 9 } = req.body;
+    const {
+      gameId,
+      sequenceLength = 5,
+      gridSize = 9,
+      difficulty = "MEDIUM",
+    } = req.body;
     const userId = req.user._id;
+
+    // Handle Word Game
+    if (gameId === "wordGame") {
+      const targetWord = getRandomWord(difficulty);
+
+      const session = await GameSession.create({
+        userId,
+        gameId,
+        puzzleId: null,
+        targetWord,
+        startTime: new Date(),
+      });
+
+      return res.status(201).json({
+        success: true,
+        sessionId: session._id,
+        wordLength: targetWord.length, // Send length to frontend, hide the actual word
+        startTime: session.startTime,
+      });
+    }
 
     // Handle Echo Pattern (dynamic sequence generation)
     if (gameId === "echoPattern" || gameId === "memory") {
@@ -88,8 +113,14 @@ export const startGame = async (req, res) => {
 // 3. Submit solution, verify board, update User XP & Daily Streak
 export const submitGame = async (req, res) => {
   try {
-    const { sessionId, userSequence, userBoard, rects, clientTimeElapsed } =
-      req.body;
+    const {
+      sessionId,
+      userSequence,
+      userBoard,
+      submittedWord,
+      rects,
+      clientTimeElapsed,
+    } = req.body;
     const userId = req.user._id;
 
     const session = await GameSession.findById(sessionId);
@@ -100,12 +131,22 @@ export const submitGame = async (req, res) => {
     }
 
     let isCorrect = false;
-    let failureReason = "Sequence incorrect.";
+    let failureReason = "Incorrect guess.";
 
     // GAME ROUTING LOGIC
-    if (session.gameId === "echoPattern" || session.gameId === "memory") {
-      // Compare user tap sequence against the session's target sequence
-      isCorrect = JSON.stringify(userSequence) === JSON.stringify(session.targetSequence);
+    if (session.gameId === "wordGame") {
+      // Validate submitted word against target word stored in session
+      isCorrect =
+        submittedWord?.trim().toUpperCase() ===
+        session.targetWord?.toUpperCase();
+      if (!isCorrect) failureReason = "Word guess does not match.";
+    } else if (
+      session.gameId === "echoPattern" ||
+      session.gameId === "memory"
+    ) {
+      isCorrect =
+        JSON.stringify(userSequence) === JSON.stringify(session.targetSequence);
+      if (!isCorrect) failureReason = "Sequence incorrect.";
     } else if (session.gameId === "shikaku") {
       const puzzle = await Puzzle.findById(session.puzzleId);
       if (!puzzle)
@@ -131,7 +172,7 @@ export const submitGame = async (req, res) => {
     }
 
     if (!isCorrect) {
-      session.status = "COMPLETED"; // Or ABANDONED based on game flow
+      session.status = "COMPLETED";
       await session.save();
       return res.status(400).json({ success: false, message: failureReason });
     }
@@ -142,9 +183,14 @@ export const submitGame = async (req, res) => {
       (endTime - new Date(session.startTime)) / 1000,
     );
 
-    // XP calculation scaled for sequence recall
-    const sequenceLength = session.targetSequence?.length || 5;
-    let xpEarned = sequenceLength * 15;
+    // XP calculation scaled for word games
+    let xpEarned = 50; // Base word game XP
+    if (session.gameId === "wordGame") {
+      xpEarned = (session.targetWord?.length || 5) * 12;
+    } else if (session.targetSequence) {
+      xpEarned = session.targetSequence.length * 15;
+    }
+
     if (clientTimeElapsed < 10) xpEarned += 25; // Speed bonus
 
     // Finalize Game Session
@@ -154,7 +200,7 @@ export const submitGame = async (req, res) => {
     session.xpEarned = xpEarned;
     await session.save();
 
-    // Update User XP, Game-Specific Elo (`gameElo.memory`) & Daily Streak
+    // Update User XP & Elo (`gameElo.wordGame`)
     const user = await User.findById(userId);
 
     if (user) {
@@ -163,7 +209,8 @@ export const submitGame = async (req, res) => {
       user.xp = (user.xp || 0) + xpEarned;
 
       if (!user.gameElo) user.gameElo = {};
-      user.gameElo.memory = (user.gameElo?.memory || 1200) + 12;
+      const eloKey = session.gameId === "wordGame" ? "wordGame" : "memory";
+      user.gameElo[eloKey] = (user.gameElo?.[eloKey] || 1200) + 12;
       user.globalElo = (user.globalElo || 1200) + 8;
 
       await user.save();
@@ -171,7 +218,10 @@ export const submitGame = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message: "PATTERN RECALLED PERFECTLY!",
+      message:
+        session.gameId === "wordGame"
+          ? "WORD GUESSED CORRECTLY!"
+          : "PATTERN RECALLED PERFECTLY!",
       xpEarned,
       durationInSeconds,
       currentStreak: user?.streak?.currentStreak || 1,

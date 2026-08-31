@@ -6,6 +6,7 @@ const gameSessionSchema = new mongoose.Schema(
     gameId: { type: String, required: true },
     puzzleId: { type: mongoose.Schema.Types.ObjectId, ref: 'Puzzle' },
     targetSequence: [{ type: Number }], 
+    targetWord: { type: String },
     status: {
       type: String,
       enum: ['IN_PROGRESS', 'COMPLETED', 'ABANDONED'],
