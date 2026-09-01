@@ -4,6 +4,7 @@ import { User } from "../models/User.js";
 import { updateDailyStreak } from "../utils/updateStreak.js";
 import { validateShikakuSolution } from "../utils/shikakuGenerator.js";
 import { generateEchoSequence } from "../utils/echoPatternGenerator.js";
+import { getRandomWord } from "../utils/wordGenerator.js";
 
 // 1. Fetch a random puzzle board (hides solution)
 export const getPuzzle = async (req, res) => {
@@ -120,6 +121,7 @@ export const submitGame = async (req, res) => {
       submittedWord,
       rects,
       clientTimeElapsed,
+      attemptNumber = 1,
     } = req.body;
     const userId = req.user._id;
 
@@ -130,20 +132,94 @@ export const submitGame = async (req, res) => {
         .json({ success: false, message: "Invalid or expired session." });
     }
 
+    // ─────────────────────────────────────────────────────────────────
+    // WORD GAME HANDLER
+    // ─────────────────────────────────────────────────────────────────
+    if (session.gameId === "wordGame") {
+      const cleanGuess = submittedWord?.trim().toUpperCase() || "";
+      const targetWord = session.targetWord?.toUpperCase() || "";
+
+      if (!cleanGuess) {
+        return res
+          .status(400)
+          .json({ success: false, message: "No word provided." });
+      }
+
+      // Compute Wordle-style feedback array (['correct', 'present', 'absent'])
+      const feedback = computeWordleFeedback(cleanGuess, targetWord);
+      const isCorrect = cleanGuess === targetWord;
+
+      // 1. INCORRECT GUESS - ATTEMPTS REMAINING
+      if (!isCorrect && attemptNumber < 6) {
+        return res.status(200).json({
+          success: false,
+          isCorrect: false,
+          feedback,
+          message: "Incorrect guess. Keep trying!",
+        });
+      }
+
+      // 2. INCORRECT GUESS - OUT OF ATTEMPTS (GAME OVER / LOSS)
+      if (!isCorrect && attemptNumber >= 6) {
+        session.status = "COMPLETED";
+        session.endTime = new Date();
+        await session.save();
+
+        return res.status(200).json({
+          success: false,
+          isCorrect: false,
+          isGameOver: true,
+          feedback,
+          correctWord: targetWord,
+          message: "Out of attempts! Game over.",
+        });
+      }
+
+      // 3. CORRECT GUESS - WINNER (Finalize session and calculate XP/Streak)
+      const endTime = new Date();
+      const durationInSeconds = Math.floor(
+        (endTime - new Date(session.startTime)) / 1000,
+      );
+
+      let xpEarned = (targetWord.length || 5) * 12;
+      if (clientTimeElapsed && clientTimeElapsed < 10) xpEarned += 25;
+
+      session.status = "COMPLETED";
+      session.endTime = endTime;
+      session.durationInSeconds = durationInSeconds;
+      session.xpEarned = xpEarned;
+      await session.save();
+
+      const user = await User.findById(userId);
+      if (user) {
+        await updateDailyStreak(user);
+        user.xp = (user.xp || 0) + xpEarned;
+
+        if (!user.gameElo) user.gameElo = {};
+        user.gameElo.wordGame = (user.gameElo?.wordGame || 1200) + 12;
+        user.globalElo = (user.globalElo || 1200) + 8;
+
+        await user.save();
+      }
+
+      return res.status(200).json({
+        success: true,
+        isCorrect: true,
+        feedback,
+        xpEarned,
+        durationInSeconds,
+        currentStreak: user?.streak?.currentStreak || 1,
+        message: "WORD GUESSED CORRECTLY!",
+      });
+    }
+
+    // ─────────────────────────────────────────────────────────────────
+    // OTHER GAMES ROUTING LOGIC (ECHO, SHIKAKU, SUDOKU)
+    // ─────────────────────────────────────────────────────────────────
     let isCorrect = false;
     let failureReason = "Incorrect guess.";
 
-    // GAME ROUTING LOGIC
-    if (session.gameId === "wordGame") {
-      // Validate submitted word against target word stored in session
-      isCorrect =
-        submittedWord?.trim().toUpperCase() ===
-        session.targetWord?.toUpperCase();
-      if (!isCorrect) failureReason = "Word guess does not match.";
-    } else if (
-      session.gameId === "echoPattern" ||
-      session.gameId === "memory"
-    ) {
+    if (session.gameId === "echoPattern" || session.gameId === "memory") {
       isCorrect =
         JSON.stringify(userSequence) === JSON.stringify(session.targetSequence);
       if (!isCorrect) failureReason = "Sequence incorrect.";
@@ -177,39 +253,32 @@ export const submitGame = async (req, res) => {
       return res.status(400).json({ success: false, message: failureReason });
     }
 
-    // Calculate duration & XP
+    // Calculate duration & XP for non-word games
     const endTime = new Date();
     const durationInSeconds = Math.floor(
       (endTime - new Date(session.startTime)) / 1000,
     );
 
-    // XP calculation scaled for word games
-    let xpEarned = 50; // Base word game XP
-    if (session.gameId === "wordGame") {
-      xpEarned = (session.targetWord?.length || 5) * 12;
-    } else if (session.targetSequence) {
-      xpEarned = session.targetSequence.length * 15;
-    }
+    let xpEarned = session.targetSequence
+      ? session.targetSequence.length * 15
+      : 50;
 
-    if (clientTimeElapsed < 10) xpEarned += 25; // Speed bonus
+    if (clientTimeElapsed && clientTimeElapsed < 10) xpEarned += 25;
 
-    // Finalize Game Session
     session.status = "COMPLETED";
     session.endTime = endTime;
     session.durationInSeconds = durationInSeconds;
     session.xpEarned = xpEarned;
     await session.save();
 
-    // Update User XP & Elo (`gameElo.wordGame`)
     const user = await User.findById(userId);
-
     if (user) {
       await updateDailyStreak(user);
 
       user.xp = (user.xp || 0) + xpEarned;
 
       if (!user.gameElo) user.gameElo = {};
-      const eloKey = session.gameId === "wordGame" ? "wordGame" : "memory";
+      const eloKey = session.gameId === "memory" ? "memory" : "shikaku";
       user.gameElo[eloKey] = (user.gameElo?.[eloKey] || 1200) + 12;
       user.globalElo = (user.globalElo || 1200) + 8;
 
@@ -218,10 +287,8 @@ export const submitGame = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      message:
-        session.gameId === "wordGame"
-          ? "WORD GUESSED CORRECTLY!"
-          : "PATTERN RECALLED PERFECTLY!",
+      isCorrect: true,
+      message: "PATTERN RECALLED PERFECTLY!",
       xpEarned,
       durationInSeconds,
       currentStreak: user?.streak?.currentStreak || 1,
@@ -266,4 +333,31 @@ export const abandonGameSession = async (req, res) => {
       error: error.message,
     });
   }
+};
+
+const computeWordleFeedback = (guess, target) => {
+  const length = target.length;
+  const feedback = new Array(length).fill("absent");
+  const targetChars = target.split("");
+  const used = new Array(length).fill(false);
+
+  // Pass 1: Exact matches (Green)
+  for (let i = 0; i < length; i++) {
+    if (guess[i] === targetChars[i]) {
+      feedback[i] = "correct";
+      used[i] = true;
+    }
+  }
+  // Pass 2: Partial matches (Yellow)
+  for (let i = 0; i < length; i++) {
+    if (feedback[i] === "correct") continue;
+    const foundIdx = targetChars.findIndex(
+      (char, idx) => char === guess[i] && !used[idx],
+    );
+    if (foundIdx !== -1) {
+      feedback[i] = "present";
+      used[foundIdx] = true;
+    }
+  }
+  return feedback;
 };

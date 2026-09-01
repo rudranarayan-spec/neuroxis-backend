@@ -1,9 +1,9 @@
 // src/utils/wordGenerator.js
 
 const WORD_DICTIONARY = {
-  EASY: ['CODE', 'BYTE', 'NODE', 'DATA', 'LOOP'],
-  MEDIUM: ['REACT', 'MONGO', 'REDEX', 'STACK', 'SWIFT'],
-  HARD: ['EXPRESS', 'NEURAL', 'CYBER', 'ROUTER', 'ASYNCS'],
+  EASY: ['CODE', 'BYTE', 'NODE', 'DATA', 'LOOP', 'ANIL'],
+  MEDIUM: ['REACT', 'MONGO', 'REDIS', 'STACK', 'SWIFT','APPLE', 'EAGLE', 'BERRY', 'CLOUD', 'DEBUG', 'CYBER', 'OBJECT', 'CRIME', 'PHONE', 'TABLE', 'CHAIR', 'MOUSE', "CLAIM"],
+  HARD: ['EXPRESS', 'NEURAL', 'DONKEY', 'ROUTER', 'ASYNCS'],
 };
 
 export const getRandomWord = (difficulty = 'MEDIUM') => {
